@@ -38,7 +38,7 @@ omnishield:
 by every request (`CacheReplayStore` on a PSR-6 pool; the Symfony bundle gives `cache.app`).
 Without one, this process's memory: right in a test or a worker, not behind PHP-FPM.
 
-[Documentation](docs/index.md): the options, the widget and its script, the challenge in the page
+[Documentation](docs/index.md): what it calls, the credentials, the capabilities, an example run offline, the errors, the options, the widget and its script, the challenge in the page
 or from a route, the action, what was verified - the whole way in PHP: issued, solved by the
 library, verified, refused when posted again.
 

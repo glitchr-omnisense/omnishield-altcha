@@ -1,9 +1,11 @@
----
-title: omnishield/altcha
-order: 1
----
-
 # omnishield/altcha
+
+ALTCHA as an Omnishield captcha: a proof of work the site issues and checks itself, over
+`altcha-org/altcha` (the PHP library, ^2.3) and the `altcha` widget 3.3.0 (npm, MIT). The
+visitor's browser derives keys until one starts as the challenge asks; the site checks the one it
+found. It calls nothing: no third party, no cookie, no consent to ask - the family's default. Since
+ALTCHA cannot tell a solution it saw before, the gateway remembers each one in the store of spent
+tokens it is given.
 
 ## Installation
 
@@ -20,6 +22,12 @@ use Omnishield\Replay\CacheReplayStore;
 
 $gateway = (new AltchaGatewayFactory(new CacheReplayStore($psr6Pool)))->create(['hmac_key' => getenv('ALTCHA_HMAC_KEY')]);
 ```
+
+## Credentials
+
+None from anyone: an `hmac_key` of the site's own - long, random, secret, from the environment or
+the secrets vault - signs the challenges. Changing it makes the challenges already in pages
+invalid (`invalidSignature`).
 
 ## The sources
 
@@ -56,21 +64,40 @@ ALTCHA does not know where the widget was shown.
 
 ## Options
 
-| Option | Default | |
-|---|---|---|
-| `hmac_key` | required | signs the challenges: long, random, secret - an environment variable |
-| `algorithm` | `PBKDF2/SHA-256` | `PBKDF2/SHA-384`, `PBKDF2/SHA-512`, `SHA-256`, `SHA-384`, `SHA-512`: what the widget bundles |
-| `cost` | 5000 | the derivation's iterations: the work of one try |
-| `key_prefix` | `00` | what the derived key must start with: each hexadecimal pair multiplies the tries by 256 |
-| `expires` | 600 | seconds a challenge may be solved and posted in |
-| `challenge_url` | none | where the widget fetches its challenge; none: the challenge is in the page |
-| `field` | `altcha` | the posted field |
-| `script` | jsDelivr, `altcha@3.3.0/dist/main/altcha.min.js`; in Symfony, the site's own copy (`/omnishield/altcha/3.3.0/altcha.min.js`) | the widget's script; `integrity` is set for both addresses |
-| `integrity` | | the script's Subresource Integrity, for another address |
-| `attributes` | `{}` | `<altcha-widget>`'s own attributes: `auto` (`onsubmit`, `onfocus`, `onload`), `display`, `language`, `type`, `theme`, `workers` |
-| `configuration` | `{}` | its `configuration` attribute, as JSON: `{hideFooter: true}`, `{minDuration: 1000}` |
-| `language` | none: the visitor's (in Symfony, the request's) | the widget's language, its `language` attribute: `fr`, `de`, `pt-br` |
-| `strings` | `{}` | its texts, by name (`AltchaGateway::TEXTS`): `{label: "Pas un robot", verified: "Merci"}` |
+| Option | Type | Default | Required | |
+|---|---|---|---|---|
+| `hmac_key` | string | - | yes | signs the challenges: long, random, secret - an environment variable |
+| `algorithm` | string | `PBKDF2/SHA-256` | no | `PBKDF2/SHA-384`, `PBKDF2/SHA-512`, `SHA-256`, `SHA-384`, `SHA-512`: what the widget bundles; another: `InvalidConfigException` |
+| `cost` | int | `5000` | no | the derivation's iterations: the work of one try (at least 1) |
+| `key_prefix` | string, hexadecimal | `00` | no | what the derived key must start with: each hexadecimal pair multiplies the tries by 256; not hexadecimal: `InvalidConfigException` |
+| `expires` | int, seconds | `600` | no | how long a challenge may be solved and posted in (at least 1) |
+| `challenge_url` | string | `null` | no | where the widget fetches its challenge (`?action=` added); none: the challenge is in the page |
+| `field` | string | `altcha` | no | the posted field |
+| `script` | string | jsDelivr's `altcha@3.3.0/dist/main/altcha.min.js` (`AltchaGatewayFactory::SCRIPT`); under the Symfony and Laravel bridges, the site's own copy (`/omnishield/altcha/3.3.0/altcha.min.js`, `SCRIPT_PATH`) | no | the widget's script; `null` prints none |
+| `integrity` | string | `null`: `AltchaGatewayFactory::INTEGRITY` for the two addresses above | no | the script's Subresource Integrity, for another address |
+| `attributes` | map | `{}` | no | `<altcha-widget>`'s own attributes: `auto` (`onsubmit`, `onfocus`, `onload`), `display`, `language`, `type`, `theme`, `workers` |
+| `configuration` | map | `{}` | no | its `configuration` attribute, as JSON: `{hideFooter: true}`, `{minDuration: 1000}` |
+| `language` | string | `null`: the visitor's (under the Symfony bridge, the request's) | no | the widget's language, its `language` attribute: `fr`, `de`, `pt-br` (`fr_FR` is written `fr-fr`) |
+| `strings` | map | `{}` | no | its texts, by name (`AltchaGateway::TEXTS`): `{label: "Pas un robot", verified: "Merci"}` |
+
+`new AltchaGatewayFactory(?ReplayStoreInterface $replays = null)`: the store of spent tokens,
+shared by every request (`CacheReplayStore` on a PSR-6 pool, or one of the site's on an atomic
+store); none is this process's memory (`InMemoryReplayStore`), right in a test or a worker, not
+behind PHP-FPM. `AltchaGatewayFactory::algorithm($name)` gives the library's key derivation of a
+name (a solver of your own, the tests).
+
+## Capabilities
+
+| | |
+|---|---|
+| is this token valid (`ChallengeInterface`) | yes |
+| it issues its challenges (`ChallengeIssuerInterface::issue($action)`) | yes: the JSON the widget fetches |
+| texts in the visitor's language (`LocalizableInterface`) | yes: `texts()`, `language()`, `localized($language, $strings)` |
+| the action checked | yes: signed into the challenge's data |
+| the host checked | no: ALTCHA does not know where the widget was shown |
+| a score | no |
+| a token used twice | refused (`duplicate`), by the store of spent tokens |
+| third party, cookies | none, none (the script: the site's, or jsDelivr's in PHP alone) |
 
 The widget is printed as `<script type="module" async defer>` and `<altcha-widget challenge="..."
 name="altcha">`.
@@ -141,6 +168,69 @@ spends it: let the widget fetch a fresh one, from the Symfony bridge's route
 (`/omnishield/<gateway>/challenge`) or one of yours that answers `$gateway->issue($action)` with
 `Cache-Control: no-store`.
 
+## Example
+
+A widget in French, its challenge solved by the library's own solver (what the browser does), then
+posted twice and for another action (run in omnishield's workspace on 2026-10-26, offline - the
+date printed is that run's):
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use AltchaOrg\Altcha\Altcha;
+use AltchaOrg\Altcha\Challenge;
+use AltchaOrg\Altcha\Payload;
+use AltchaOrg\Altcha\SolveChallengeOptions;
+use Omnishield\Altcha\AltchaGatewayFactory;
+use Omnishield\Model\Attempt;
+use Omnishield\Replay\InMemoryReplayStore;
+
+$altcha = (new AltchaGatewayFactory(new InMemoryReplayStore()))->create(['hmac_key' => 'a-long-random-secret-of-the-site', 'language' => 'fr', 'strings' => ['label' => 'Je ne suis pas un robot']]);
+$widget = $altcha->widget('contact');
+echo $widget->tag, ' posting "', $widget->field, '", origins: ', implode(', ', $widget->origins), ', texts: ', $widget->inline ? 'yes' : 'no', "\n";
+
+// The browser's part, done here by altcha-org/altcha's own solver.
+$solve = static function (array $issued): string {
+    $challenge = Challenge::fromArray($issued);
+    $solution = (new Altcha())->solveChallenge(new SolveChallengeOptions(challenge: $challenge, algorithm: AltchaGatewayFactory::algorithm('PBKDF2/SHA-256')));
+
+    return (new Payload($challenge, $solution))->toBase64();
+};
+$token = $solve(json_decode($widget->attributes['challenge'], true));
+foreach (['contact', 'contact'] as $action) {
+    $verdict = $altcha->verify(new Attempt($token, action: $action));
+    echo $verdict->passed ? 'passed, issued at '.$verdict->at->format(DATE_ATOM) : 'refused ('.implode(', ', $verdict->reasons).')', "\n";
+}
+echo 'another action: ', implode(', ', $altcha->verify(new Attempt($solve($altcha->issue('signup')), action: 'contact'))->reasons), "\n";
+echo 'garbage: ', implode(', ', $altcha->verify(new Attempt('not-a-payload'))->codes), "\n";
+```
+
+```
+altcha-widget posting "altcha", origins: https://cdn.jsdelivr.net, texts: yes
+passed, issued at 2026-10-25T23:46:40+00:00
+refused (duplicate)
+another action: action
+garbage: malformed
+```
+
+In Symfony, with the challenge fetched from the bridge's route (the page may then be cached):
+
+```yaml
+omnishield:
+    gateways:
+        forms:
+            factory: altcha
+            options: { hmac_key: '%env(ALTCHA_HMAC_KEY)%', challenge_url: /omnishield/forms/challenge }
+```
+
+## Errors
+
+ALTCHA calls nothing, so it is never unreachable and never refuses a key: a token that does not
+hold is a `Verdict` (the table above). `InvalidConfigException` at `create()`: `hmac_key` missing
+or empty, an unknown `algorithm`, a `key_prefix` that is not hexadecimal.
+
 ## Verified, and not
 
 | | |
@@ -154,3 +244,10 @@ spends it: let the widget fetch a fresh one, from the Symfony bridge's route
 | Its texts | **done on 2026-10-07** by the tests: the `language` attribute and the script registering the texts, the bridge's four catalogues complete (every name of `TEXTS`), the request's locale followed, `language` and `strings` winning. The registry's API (`$altcha.i18n.get/set`) and the way the widget picks its language (its attribute, `<html lang>`, the browser's) read from its code (`altcha` 3.3.0). In a browser: not done |
 | Other algorithms | `SHA-256` by the tests; the PBKDF2 variants by the library's own |
 | `CacheReplayStore` under concurrent requests | not exercised: PSR-6 has no atomic add - see the store's note |
+
+## Responsibility
+
+ALTCHA here reaches no service: the challenge is issued and checked by the site. The widget's
+script is the work of Daniel Regeci and BAU Software s.r.o., under the MIT License, shipped
+unchanged with its licence (`public/altcha.LICENSE.txt`); the PHP library is `altcha-org/altcha`'s.
+This package is not affiliated with their authors; its MIT licence covers its own code.
