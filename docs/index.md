@@ -145,6 +145,7 @@ spends it: let the widget fetch a fresh one, from the Symfony bridge's route
 
 | | |
 |---|---|
+| The family's conformance suite (`Omnishield\Testing\GatewayContractTests`) | **green on 2026-10-25**, offline: `Tests/AltchaContractTest.php` - challenges issued and solved here, no request made |
 | The whole way in PHP | **done on 2026-10-07**, by the tests and `docker compose run --rm omnishield bare --live`: a challenge issued, solved by `altcha-org/altcha`'s own `solveChallenge()` (what the widget does), verified, refused the second time (`duplicate`) and for another action (`action`); a challenge signed with another key, a wrong solution, an expired challenge refused |
 | The widget's script on jsDelivr | fetched on 2026-10-07: served, an ES module, its SHA-256 the `integrity` above |
 | The copy shipped in `public/` | **done on 2026-10-07**: npm's tarball `altcha-3.3.0.tgz` (the registry's SHA-1 checked), its `dist/main/altcha.min.js` of the same SHA-256 as jsDelivr's - asserted by the tests; licence MIT, its text beside it; read for what it loads: nothing (data: workers) |
