@@ -10,7 +10,7 @@
         "antispam",
         "omnishield"
     ],
-    "homepage": "https://github.com/glitchr-studio/omnishield-altcha",
+    "homepage": "https://github.com/glitchr-omnisense/omnishield-altcha",
     "license": "MIT",
     "authors": [
         {
@@ -21,7 +21,7 @@
     "require": {
         "php": ">=8.2",
         "altcha-org/altcha": "^2.3",
-        "omniscient/omnishield": "^1.0@dev"
+        "omnisense/omnishield": "^1.0@dev"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0",

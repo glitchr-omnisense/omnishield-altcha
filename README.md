@@ -1,6 +1,6 @@
 # omnishield/altcha
 
-**ALTCHA** for [omniscient/omnishield](https://github.com/glitchr-studio/omnishield): a captcha the site
+**ALTCHA** for [omnisense/omnishield](https://github.com/glitchr-omnisense/omnishield): a captcha the site
 issues and checks itself. The visitor's browser solves a small proof of work - it derives keys
 until one starts as the challenge asks - and the site checks the solution: signed with the site's
 key, unexpired, for this action, and **never posted before**. Nobody else is involved: no third
