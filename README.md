@@ -42,6 +42,10 @@ Without one, this process's memory: right in a test or a worker, not behind PHP-
 or from a route, the action, what was verified - the whole way in PHP: issued, solved by the
 library, verified, refused when posted again.
 
+## Usage policy
+
+[`policy.json`](policy.json) (omnisense/contracts' schema, read on 2026-11-10): no third party, so no rate limit; the script and the library are MIT, their notice kept in the copies. See the core's [usage policies](https://github.com/glitchr-omnisense/omnishield/blob/1.x/docs/policies.md).
+
 License: MIT since 2026-10-09; earlier versions remain published under LGPL-3.0-or-later.
 
 Formerly `omniguard/altcha`, renamed on 2026-10-10 with its family (`glitchr/omniguard`, now `omnisense/omnishield`).

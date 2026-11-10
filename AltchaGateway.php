@@ -2,6 +2,8 @@
 
 namespace Omnishield\Altcha;
 
+use Omnisense\Contracts\Policy\DeclaresUsagePolicyInterface;
+use Omnisense\Contracts\Policy\UsagePolicy;
 use AltchaOrg\Altcha\Algorithm\DeriveKeyInterface;
 use AltchaOrg\Altcha\Altcha;
 use AltchaOrg\Altcha\CreateChallengeOptions;
@@ -24,8 +26,13 @@ use Omnishield\Replay\ReplayStoreInterface;
  * The action is signed into the challenge's data with the time it was
  * issued: {"action": "contact", "issued": 1791363600}.
  */
-final class AltchaGateway implements ChallengeIssuerInterface, LocalizableInterface
+final class AltchaGateway implements ChallengeIssuerInterface, LocalizableInterface, DeclaresUsagePolicyInterface
 {
+    /** The usage policy its package declares (omnisense/contracts' schema). */
+    public const POLICY = __DIR__.'/policy.json';
+
+    private static ?UsagePolicy $policy = null;
+
     private readonly Altcha $altcha;
 
     /** The texts the widget shows (altcha 3.3.0's i18n keys). */
@@ -117,7 +124,13 @@ final class AltchaGateway implements ChallengeIssuerInterface, LocalizableInterf
 
     public function capabilities(): Capabilities
     {
-        return new Capabilities(challenge: true, thirdParty: false, cookies: false, scores: false, actions: true);
+        return new Capabilities(challenge: true, thirdParty: false, cookies: false, scores: false, actions: true, policy: $this->usagePolicy());
+    }
+
+    /** Its usage policy, as its package declares it: policy.json beside this class. */
+    public function usagePolicy(): UsagePolicy
+    {
+        return self::$policy ??= UsagePolicy::fromFile(self::POLICY);
     }
 
     public function issue(?string $action = null): array

@@ -1,0 +1,39 @@
+{
+    "$schema": "https://github.com/glitchr-omnisense/contracts/blob/1.x/resources/usage-policy.schema.json",
+    "provider": "altcha",
+    "rateLimits": [],
+    "rights": {
+        "commercial": "allowed",
+        "openSourceRequired": false,
+        "caching": {
+            "permission": "unknown",
+            "maxTtl": null
+        },
+        "storage": "allowed",
+        "redistribution": "allowed",
+        "attribution": {
+            "required": true,
+            "text": "ALTCHA, Copyright (c) 2023-2026 Daniel Regeci, BAU Software s.r.o., MIT License",
+            "url": "https://github.com/altcha-org/altcha",
+            "where": [
+                "source"
+            ]
+        },
+        "licence": "MIT"
+    },
+    "requirements": {
+        "key": false,
+        "userAgent": {
+            "required": false,
+            "pattern": null
+        }
+    },
+    "provenance": {
+        "terms": "https://github.com/altcha-org/altcha/blob/main/LICENSE.txt",
+        "policy": null,
+        "contact": "https://github.com/altcha-org/altcha/issues",
+        "notes": "No third party: the site issues and verifies its challenges itself, nothing is called, so there is no rate limit. The widget's script (shipped in public/) and the PHP library are MIT: their copyright and licence notice stay in the copies (attribution where: source), nothing to show to visitors. The HMAC key is the site's own, not an account's.",
+        "verifiedAt": "2026-11-10",
+        "declaredBy": "maintainer"
+    }
+}

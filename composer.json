@@ -21,6 +21,7 @@
     "require": {
         "php": ">=8.2",
         "altcha-org/altcha": "^2.3",
+        "omnisense/contracts": "^1.0@dev",
         "omnisense/omnishield": "^1.0@dev"
     },
     "require-dev": {
@@ -42,5 +43,10 @@
     },
     "config": {
         "sort-packages": true
+    },
+    "extra": {
+        "omnisense": {
+            "policy": "policy.json"
+        }
     }
 }
