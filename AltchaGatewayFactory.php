@@ -80,24 +80,24 @@ final class AltchaGatewayFactory extends GatewayFactory
     protected function build(Config $c): GatewayInterface
     {
         $script = $c->string('script');
-        $prefix = strtolower((string) $c['key_prefix']);
+        $prefix = strtolower(self::text($c['key_prefix']));
         if ('' === $prefix || !ctype_xdigit($prefix)) {
-            throw new InvalidConfigException(\sprintf('The "altcha" gateway\'s key_prefix must be hexadecimal: "%s".', $c['key_prefix']));
+            throw new InvalidConfigException(\sprintf('The "altcha" gateway\'s key_prefix must be hexadecimal: "%s".', self::text($c['key_prefix'])));
         }
 
         return new AltchaGateway(
-            hmacKey: (string) $c['hmac_key'],
-            algorithm: self::algorithm((string) $c['algorithm']),
+            hmacKey: self::text($c['hmac_key']),
+            algorithm: self::algorithm(self::text($c['algorithm'])),
             replays: $this->replays ?? new InMemoryReplayStore(),
-            cost: max(1, (int) $c['cost']),
+            cost: max(1, self::integer($c['cost'])),
             keyPrefix: $prefix,
-            expires: max(1, (int) $c['expires']),
+            expires: max(1, self::integer($c['expires'])),
             challengeUrl: $c->string('challenge_url'),
             field: $c->string('field') ?? 'altcha',
             script: $script,
             // The file pinned, on the CDN or from the bridge: its integrity is known.
             integrity: $c->string('integrity') ?? (\in_array($script, [self::SCRIPT, self::SCRIPT_PATH], true) ? self::INTEGRITY : null),
-            attributes: (array) $c['attributes'],
+            attributes: self::attributes($c['attributes']),
             configuration: (array) $c['configuration'],
             language: $c->string('language'),
             strings: (array) $c['strings'],
@@ -115,5 +115,37 @@ final class AltchaGatewayFactory extends GatewayFactory
             'SHA-512' => new Sha(ShaAlgorithm::SHA512),
             default => throw new InvalidConfigException(\sprintf('The "altcha" gateway does not know the algorithm "%s": PBKDF2/SHA-256, PBKDF2/SHA-384, PBKDF2/SHA-512, SHA-256, SHA-384 or SHA-512.', $name)),
         };
+    }
+
+    /** An option as the (string) cast read it: a scalar as text, anything else empty. */
+    private static function text(mixed $value): string
+    {
+        return \is_scalar($value) || $value instanceof \Stringable ? (string) $value : '';
+    }
+
+    /** An option as the (int) cast read it, for a scalar; anything else 0 (the callers take at least 1). */
+    private static function integer(mixed $value): int
+    {
+        return \is_scalar($value) ? (int) $value : 0;
+    }
+
+    /**
+     * The widget's attributes as the (array) cast gave them, printed the same: a text or a boolean as
+     * it is, a number as its text; what the widget never prints (null, a nested value) left out.
+     *
+     * @return array<string, string|bool>
+     */
+    private static function attributes(mixed $value): array
+    {
+        $attributes = [];
+        foreach ((array) $value as $name => $one) {
+            if (\is_string($one) || \is_bool($one)) {
+                $attributes[(string) $name] = $one;
+            } elseif (\is_int($one) || \is_float($one)) {
+                $attributes[(string) $name] = (string) $one;
+            }
+        }
+
+        return $attributes;
     }
 }

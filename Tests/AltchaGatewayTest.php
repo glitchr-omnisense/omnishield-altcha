@@ -86,6 +86,7 @@ final class AltchaGatewayTest extends TestCase
     {
         $gateway = $this->gateway();
         $other = (new AltchaGatewayFactory())->create(['hmac_key' => 'another-site-s-secret', 'cost' => 10]);
+        self::assertInstanceOf(AltchaGateway::class, $other);
 
         self::assertSame([Verdict::MISSING], $gateway->verify(new Attempt(''))->reasons);
         self::assertSame(['malformed'], $gateway->verify(new Attempt('not base64 at all'))->codes);
@@ -103,6 +104,7 @@ final class AltchaGatewayTest extends TestCase
         $algorithm = AltchaGatewayFactory::algorithm('PBKDF2/SHA-256');
         $challenge = (new Altcha(self::KEY))->createChallenge(new CreateChallengeOptions(algorithm: $algorithm, cost: 10, expiresAt: time() - 1));
         $solution = (new Altcha())->solveChallenge(new SolveChallengeOptions(algorithm: $algorithm, challenge: $challenge));
+        self::assertNotNull($solution);
 
         $verdict = $this->gateway()->verify(new Attempt((new Payload($challenge, $solution))->toBase64()));
         self::assertSame([Verdict::EXPIRED], $verdict->reasons);
@@ -117,8 +119,12 @@ final class AltchaGatewayTest extends TestCase
         self::assertSame(['type' => 'module', 'async' => true, 'defer' => true, 'integrity' => AltchaGatewayFactory::INTEGRITY, 'crossorigin' => 'anonymous'], $widget->scriptAttributes);
         self::assertSame(['https://cdn.jsdelivr.net'], $widget->origins, 'the script\'s host sees the visitor: serve it yourself and nobody does');
         $challenge = json_decode((string) $widget->attributes['challenge'], true);
+        self::assertIsArray($challenge);
         self::assertSame(['parameters', 'signature'], array_keys($challenge));
-        self::assertSame(['PBKDF2/SHA-256', 10, '00', 'contact'], [$challenge['parameters']['algorithm'], $challenge['parameters']['cost'], $challenge['parameters']['keyPrefix'], $challenge['parameters']['data']['action']]);
+        $parameters = $challenge['parameters'];
+        self::assertIsArray($parameters);
+        self::assertIsArray($parameters['data']);
+        self::assertSame(['PBKDF2/SHA-256', 10, '00', 'contact'], [$parameters['algorithm'], $parameters['cost'], $parameters['keyPrefix'], $parameters['data']['action']]);
         self::assertSame(['name' => 'altcha', 'language' => 'fr', 'auto' => 'onsubmit', 'configuration' => '{"hideFooter":true}'], array_diff_key($widget->attributes, ['challenge' => 1]));
         self::assertStringStartsWith('<script src="https://cdn.jsdelivr.net/npm/altcha@3.3.0/dist/main/altcha.min.js" type="module" async defer integrity="sha256-', $widget->html());
         self::assertStringContainsString('<altcha-widget challenge="{&quot;parameters&quot;:', $widget->html());
@@ -140,7 +146,9 @@ final class AltchaGatewayTest extends TestCase
     {
         // The file served by the Symfony bridge is the very one the CDN serves: same integrity.
         self::assertFileExists(AltchaGatewayFactory::SCRIPT_FILE);
-        self::assertSame(AltchaGatewayFactory::INTEGRITY, 'sha256-'.base64_encode(hash_file('sha256', AltchaGatewayFactory::SCRIPT_FILE, true)));
+        $hash = hash_file('sha256', AltchaGatewayFactory::SCRIPT_FILE, true);
+        self::assertIsString($hash);
+        self::assertSame(AltchaGatewayFactory::INTEGRITY, 'sha256-'.base64_encode($hash));
         self::assertStringContainsString('MIT License', (string) file_get_contents(\dirname(AltchaGatewayFactory::SCRIPT_FILE).'/altcha.LICENSE.txt'));
         self::assertStringContainsString(AltchaGatewayFactory::SCRIPT_VERSION, AltchaGatewayFactory::SCRIPT_PATH);
         self::assertStringContainsString('@'.AltchaGatewayFactory::SCRIPT_VERSION.'/', AltchaGatewayFactory::SCRIPT);
@@ -208,7 +216,7 @@ final class AltchaGatewayTest extends TestCase
         foreach ([['algorithm' => 'MD5'], ['key_prefix' => 'zz'], ['hmac_key' => '']] as $options) {
             try {
                 (new AltchaGatewayFactory())->create($options + ['hmac_key' => self::KEY]);
-                self::fail(json_encode($options));
+                self::fail(json_encode($options, \JSON_THROW_ON_ERROR));
             } catch (InvalidConfigException) {
                 self::addToAssertionCount(1);
             }

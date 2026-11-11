@@ -52,8 +52,8 @@ final class AltchaGateway implements ChallengeIssuerInterface, LocalizableInterf
 
     /**
      * @param array<string, string|bool> $attributes
-     * @param array<string, mixed>       $configuration
-     * @param array<string, string>      $strings       the widget's texts, by name (TEXTS)
+     * @param array<mixed>               $configuration its configuration attribute, as JSON
+     * @param array<mixed>               $strings       the widget's texts, by name (TEXTS); anything else is left out
      */
     public function __construct(
         string $hmacKey,
